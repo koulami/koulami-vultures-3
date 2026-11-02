@@ -1,0 +1,7 @@
+{
+  "name": "Vulture Arena: Cyprus & Greece",
+  "description": "Διαδραστική εκπαιδευτική αρένα και κουίζ γνώσεων για τους γύπες της Κύπρου και της Ελλάδας (Όρνιο, Μαυρόγυπας, Γυπαετός, Ασπροπάρης).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

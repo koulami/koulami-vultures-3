@@ -40,6 +40,8 @@ import { JoinQRModal } from './components/JoinQRModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { EditQuestionModal } from './components/EditQuestionModal';
 import { EditTeamModal } from './components/EditTeamModal';
+import { PrintableQuestionRegisterModal } from './components/PrintableQuestionRegisterModal';
+import { exportFullJSONBackup, exportQuestionsCSV } from './utils/questionExportManager';
 import { Language, translations } from './i18n/translations';
 import {
   Feather,
@@ -86,6 +88,9 @@ import {
   ArrowDown,
   Target,
   Film,
+  Download,
+  Database,
+  X,
 } from 'lucide-react';
 
 export default function App() {
@@ -504,6 +509,57 @@ function isYouTubeUrl(url: string): boolean {
     setIsPresentationOpen(true);
   };
 
+  // Export & Printable Register Modal State & Handlers
+  const [isPrintRegisterOpen, setIsPrintRegisterOpen] = useState<boolean>(false);
+  const [exportToast, setExportToast] = useState<{
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (exportToast) {
+      const timer = setTimeout(() => {
+        setExportToast(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [exportToast]);
+
+  const handleExportFullBackup = () => {
+    const result = exportFullJSONBackup(questions, teams, posters, teamPhotoSubmissions, language);
+    if (result.success) {
+      setExportToast({
+        type: 'success',
+        title: language === 'en' ? 'Full Backup (JSON) Created' : 'Πλήρες Αντίγραφο Ασφαλείας (JSON)',
+        message: language === 'en' ? result.messageEn : result.message,
+      });
+    } else {
+      setExportToast({
+        type: 'error',
+        title: language === 'en' ? 'Backup Error' : 'Σφάλμα Αντιγράφου Ασφαλείας',
+        message: language === 'en' ? result.messageEn : result.message,
+      });
+    }
+  };
+
+  const handleExportAllQuestionsCSV = () => {
+    const result = exportQuestionsCSV(questions, teams, language);
+    if (result.success) {
+      setExportToast({
+        type: 'success',
+        title: language === 'en' ? 'Questions CSV Exported' : 'Εξαγωγή Ερωτήσεων (CSV)',
+        message: language === 'en' ? result.messageEn : result.message,
+      });
+    } else {
+      setExportToast({
+        type: 'error',
+        title: language === 'en' ? 'CSV Export Error' : 'Σφάλμα Εξαγωγής CSV',
+        message: language === 'en' ? result.messageEn : result.message,
+      });
+    }
+  };
+
   const renderTypeBadge = (type: QuestionType) => {
     const config: Record<QuestionType, { label: string; icon: any; color: string }> = {
       multiple_choice: { label: 'Πολλαπλή Επιλογή (Μονή)', icon: CheckCircle2, color: 'bg-amber-100 text-amber-800 border-amber-300' },
@@ -846,6 +902,66 @@ function isYouTubeUrl(url: string): boolean {
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" /> {t.newQuestion}
+                </button>
+              </div>
+            </div>
+
+            {/* Administration & Question Pool Export Actions: Full Backup, CSV, Printable Register */}
+            <div className="bg-stone-900 text-white p-4 sm:p-5 rounded-3xl border border-stone-800 shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center font-bold shrink-0">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs sm:text-sm font-black text-stone-100 uppercase tracking-wider">
+                      {language === 'el' ? 'Διαχείριση & Εξαγωγή Δεδομένων' : 'Data Management & Export Register'}
+                    </h3>
+                    <span className="text-[10px] bg-stone-800 text-amber-400 px-2 py-0.5 rounded-full border border-stone-700 font-mono">
+                      v2.1
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-400">
+                    {language === 'el'
+                      ? 'Πλήρη αντίγραφα ασφαλείας, επίσημη εξαγωγή CSV όλων των ερωτήσεων και εκτυπώσιμο μητρώο για την τάξη.'
+                      : 'Recoverable full system backups, complete question pool CSV export, and printable classroom register.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* THREE NEW FULLY FUNCTIONAL BUTTONS */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* BUTTON 1: FULL JSON BACKUP */}
+                <button
+                  type="button"
+                  onClick={handleExportFullBackup}
+                  className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-stone-100 hover:text-white border border-stone-700 hover:border-amber-500/50 font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                  title={language === 'el' ? 'Πλήρες αντίγραφο ασφαλείας (JSON)' : 'Full Backup (JSON)'}
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{language === 'el' ? 'Πλήρες αντίγραφο ασφαλείας (JSON)' : 'Full Backup (JSON)'}</span>
+                </button>
+
+                {/* BUTTON 2: COMPLETE CSV EXPORT */}
+                <button
+                  type="button"
+                  onClick={handleExportAllQuestionsCSV}
+                  className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-stone-100 hover:text-white border border-stone-700 hover:border-emerald-500/50 font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                  title={language === 'el' ? 'Εξαγωγή όλων των ερωτήσεων (CSV)' : 'Export All Questions (CSV)'}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{language === 'el' ? 'Εξαγωγή όλων των ερωτήσεων (CSV)' : 'Export All Questions (CSV)'}</span>
+                </button>
+
+                {/* BUTTON 3: PRINTABLE QUESTION REGISTER */}
+                <button
+                  type="button"
+                  onClick={() => setIsPrintRegisterOpen(true)}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-black text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                  title={language === 'el' ? 'Εκτύπωση λίστας ερωτήσεων' : 'Print Question Register'}
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>{language === 'el' ? 'Εκτύπωση λίστας ερωτήσεων' : 'Print Question Register'}</span>
                 </button>
               </div>
             </div>
@@ -2365,6 +2481,8 @@ function isYouTubeUrl(url: string): boolean {
         posters={dynamicPostersList}
         initialIndex={presentationIndex}
         language={language}
+        allSubmissions={teamPhotoSubmissions}
+        allQuestions={questions}
       />
 
       {/* 5. Admin Report Modal (PDF / CSV / JSON) */}
@@ -2390,6 +2508,42 @@ function isYouTubeUrl(url: string): boolean {
         team={teamToEdit}
         onSaveTeam={handleSaveTeam}
       />
+
+      {/* 8. Printable Question Register Modal */}
+      <PrintableQuestionRegisterModal
+        isOpen={isPrintRegisterOpen}
+        onClose={() => setIsPrintRegisterOpen(false)}
+        questions={questions}
+        teams={teams}
+        language={language}
+      />
+
+      {/* Toast Notification for Export Actions */}
+      {exportToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full p-4 rounded-2xl shadow-2xl border transition-all animate-bounce-in bg-stone-900 text-white border-stone-700 flex items-start gap-3">
+          <div className="mt-0.5 shrink-0">
+            {exportToast.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            ) : (
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0 space-y-0.5">
+            <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">
+              {exportToast.title}
+            </h4>
+            <p className="text-xs text-stone-300 leading-relaxed">
+              {exportToast.message}
+            </p>
+          </div>
+          <button
+            onClick={() => setExportToast(null)}
+            className="text-stone-400 hover:text-white p-1 rounded-lg cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

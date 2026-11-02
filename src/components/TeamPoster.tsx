@@ -45,6 +45,7 @@ import {
   Check,
   MapPin,
   Users,
+  Scale,
 } from 'lucide-react';
 
 interface TeamPosterProps {
@@ -98,9 +99,23 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
     });
   }, [poster?.scientificFacts, isEn]);
 
+  // Priority sorting: Key scientific measurements & core metrics appear near the top of the grid
+  const sortedFacts = useMemo(() => {
+    return [...validFacts].sort((a, b) => {
+      const aStat = isEn ? (a.statEn || a.stat) : a.stat;
+      const bStat = isEn ? (b.statEn || b.stat) : b.stat;
+      const aHasStat = hasText(aStat);
+      const bHasStat = hasText(bStat);
+      if (aHasStat && !bHasStat) return -1;
+      if (!aHasStat && bHasStat) return 1;
+      return 0;
+    });
+  }, [validFacts, isEn]);
+
   const renderFactIcon = (iconName: string) => {
-    const iconClass = 'w-4 h-4 text-[#9a3412]';
+    const iconClass = 'w-3 h-3 text-[#c2410c] shrink-0';
     switch (iconName) {
+      case 'Scale': return <Scale className={iconClass} />;
       case 'Maximize2': return <Maximize2 className={iconClass} />;
       case 'Sparkles': return <Sparkles className={iconClass} />;
       case 'Eye': return <Eye className={iconClass} />;
@@ -135,16 +150,10 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
     window.print();
   };
 
-  // Localized title & subtitle
+  // Localized title
   const mainTitle = isEn
     ? (poster.teamTitleEn || poster.teamTitle)
     : poster.teamTitle;
-
-  const secondaryTitle = isEn
-    ? `${poster.teamTitle} • Cyprus Field Scientific Poster`
-    : hasText(poster.teamTitleEn)
-    ? `${poster.teamTitleEn.trim()} • Επιστημονική Αφίσα Πεδίου Κύπρου`
-    : 'Επιστημονική Αφίσα Πεδίου Κύπρου';
 
   const displaySlogan = isEn && hasText(poster.sloganEn)
     ? poster.sloganEn.trim()
@@ -242,7 +251,7 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
           style={{ backgroundColor: poster.teamColor || '#c2410c' }}
         />
 
-        {/* 1. COMPACT HEADER AT THE TOP */}
+        {/* 1. COMPACT HEADER AT THE TOP - Displays only the selected team's actual title in the selected language */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e2d7c5]">
           <div className="flex items-center gap-3.5 min-w-0">
             {/* Team Avatar Badge */}
@@ -253,31 +262,10 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
             </div>
 
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                <span
-                  className="text-[10px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md text-white shadow-2xs"
-                  style={{ backgroundColor: poster.teamColor || '#c2410c' }}
-                >
-                  {isEn ? `TEAM ${poster.teamNumber}` : `ΟΜΑΔΑ ${poster.teamNumber}`}
-                </span>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8c654b]">
-                  LIFE with Vultures • LIFE18 NAT/CY/001018
-                </span>
-                <span className="text-[10px] bg-[#eef7ee] text-[#1e6129] border border-[#c4e3cb] px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-[#2a8738]" />
-                  <span>{isEn ? 'Certified Research' : 'Πιστοποιημένη Έρευνα'}</span>
-                </span>
-              </div>
-
-              {/* Selected Team's Title */}
+              {/* Selected Team's Actual Title in the Selected Language */}
               <h1 className="text-xl sm:text-2xl font-black text-[#382215] tracking-tight leading-snug truncate">
                 {mainTitle}
               </h1>
-              {hasText(secondaryTitle) && (
-                <p className="text-xs text-[#785b46] font-medium hidden sm:block truncate">
-                  {secondaryTitle}
-                </p>
-              )}
             </div>
           </div>
 
@@ -528,7 +516,7 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
           </div>
 
           {/* RIGHT COLUMN: Concise Information Cards (Rendered ONLY if valid facts exist) */}
-          {validFacts.length > 0 && (
+          {sortedFacts.length > 0 && (
             <div className="lg:col-span-7 space-y-3">
               <div className="flex items-center justify-between px-1">
                 <h2 className="text-xs font-black uppercase tracking-wider text-[#7c5035] flex items-center gap-1.5">
@@ -542,9 +530,9 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
                 </span>
               </div>
 
-              {/* 2-Column Grid of Concise Info Cards */}
+              {/* 2-Column Grid of Concise Info Cards with Key Measurements Prioritized at the Top */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {validFacts.map((fact) => {
+                {sortedFacts.map((fact) => {
                   const statText = isEn ? (fact.statEn || fact.stat) : fact.stat;
                   const headlineText = isEn ? (fact.headlineEn || fact.headline) : fact.headline;
                   const detailText = isEn ? (fact.detailEn || fact.detail) : fact.detail;
@@ -552,52 +540,55 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
 
                   const showIcon = hasText(fact.icon);
                   const showCategory = hasText(categoryText);
-                  const showTopRow = showIcon || showCategory;
                   const showStat = hasText(statText);
                   const showHeadline = hasText(headlineText);
                   const showDetail = hasText(detailText);
 
+                  // If empty card with no content, omit completely
+                  if (!showStat && !showHeadline && !showDetail) return null;
+
                   return (
                     <div
                       key={fact.id}
-                      className="bg-[#ffffff] rounded-2xl border border-[#e4d8c7] p-3.5 shadow-2xs hover:border-[#cb9f7e] hover:shadow-xs transition-all flex flex-col justify-between"
+                      className={`rounded-2xl border p-3.5 sm:p-4 shadow-2xs hover:border-[#cb9f7e] hover:shadow-xs transition-all flex flex-col justify-between ${
+                        showStat
+                          ? 'bg-gradient-to-b from-[#ffffff] to-[#fffdfa] border-[#decbb7]'
+                          : 'bg-[#ffffff] border-[#e4d8c7]'
+                      }`}
                     >
                       <div className="space-y-1.5">
-                        {/* Top Row: Icon + Short Category Label */}
-                        {showTopRow && (
-                          <div className="flex items-center justify-between gap-2">
-                            {showIcon ? (
-                              <div className="w-7 h-7 rounded-xl bg-[#fef2eb] border border-[#fad1be] flex items-center justify-center shrink-0">
-                                {renderFactIcon(fact.icon)}
-                              </div>
-                            ) : (
-                              <div />
-                            )}
-                            {showCategory && categoryText && (
-                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#f6eee2] text-[#8c5738] border border-[#e6d8c3] truncate">
-                                {categoryText.trim()}
+                        {/* Top Category Tag + Minimal Icon + Optional Metric Label */}
+                        {(showCategory || showIcon) && (
+                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                            <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#f6eee2] text-[#8c5738] border border-[#e6d8c3] truncate max-w-full">
+                              {showIcon && renderFactIcon(fact.icon)}
+                              {showCategory && categoryText && <span className="truncate">{categoryText.trim()}</span>}
+                            </span>
+                            {showStat && (
+                              <span className="text-[9px] font-bold text-[#c2410c] uppercase tracking-wider bg-[#fff2ea] px-1.5 py-0.5 rounded border border-[#fad2be] shrink-0">
+                                {isEn ? 'Metric' : 'Μέτρηση'}
                               </span>
                             )}
                           </div>
                         )}
 
-                        {/* Large, Bold Number for Important Facts */}
+                        {/* Large, Bold Typography for Key Measurements & Facts */}
                         {showStat && statText && (
-                          <div className="text-xl sm:text-2xl font-black text-[#9a3412] tracking-tight leading-none mt-1">
+                          <div className="text-2xl sm:text-3xl font-black text-[#9a3412] tracking-tight leading-none mt-1">
                             {statText.trim()}
                           </div>
                         )}
 
-                        {/* Headline */}
+                        {/* Short, punchy headline */}
                         {showHeadline && headlineText && (
-                          <h3 className="text-xs font-bold text-[#2d1b10] leading-snug">
+                          <h3 className="text-xs sm:text-[13px] font-extrabold text-[#2a170c] leading-snug">
                             {headlineText.trim()}
                           </h3>
                         )}
 
-                        {/* Concise detail text derived exclusively from assigned team questions */}
+                        {/* Concise supporting explanation */}
                         {showDetail && detailText && (
-                          <p className="text-[11px] text-[#634e3f] leading-relaxed line-clamp-3">
+                          <p className="text-[11px] sm:text-xs text-[#543e30] leading-relaxed line-clamp-3">
                             {detailText.trim()}
                           </p>
                         )}
@@ -649,7 +640,7 @@ export const TeamPoster: React.FC<TeamPosterProps> = ({
               <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center font-mono text-[9px] sm:text-[10px] text-[#7a5a43] bg-[#ffffff]/90 px-2.5 py-1 rounded-xl border border-[#ded2c0]">
                 <span className="font-semibold text-[#8c6b54]">{isEn ? 'Code:' : 'Κωδικός:'}</span>
                 <span className="font-extrabold text-[#9a3412]">
-                  VA-{poster.teamId.toUpperCase().slice(0, 10)}-{(poster.createdAt || '').replace(/-/g, '')}
+                  T{poster.teamNumber}-{poster.teamId.toUpperCase().slice(0, 8)}-{(poster.createdAt || '').replace(/-/g, '')}
                 </span>
               </div>
             )}

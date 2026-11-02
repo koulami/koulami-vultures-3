@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { TeamPosterData } from '../types/posters';
+import { TeamPosterData, TeamPhotoSubmission } from '../types/posters';
+import { Question } from '../types/game';
 import { TeamPoster } from './TeamPoster';
 import {
   X,
@@ -25,6 +26,8 @@ interface TeacherPresentationModalProps {
   posters: TeamPosterData[];
   initialIndex?: number;
   language?: 'el' | 'en';
+  allSubmissions?: TeamPhotoSubmission[];
+  allQuestions?: Question[];
 }
 
 export const TeacherPresentationModal: React.FC<TeacherPresentationModalProps> = ({
@@ -33,6 +36,8 @@ export const TeacherPresentationModal: React.FC<TeacherPresentationModalProps> =
   posters,
   initialIndex = 0,
   language = 'el',
+  allSubmissions = [],
+  allQuestions = [],
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const [isAutoPlay, setIsAutoPlay] = useState<boolean>(false);
@@ -193,6 +198,8 @@ export const TeacherPresentationModal: React.FC<TeacherPresentationModalProps> =
             poster={currentPoster}
             showActions={false}
             language={language}
+            allSubmissions={allSubmissions}
+            allQuestions={allQuestions}
           />
         </div>
 
